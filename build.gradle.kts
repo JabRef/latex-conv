@@ -32,7 +32,7 @@ dependencies {
     api("org.jspecify:jspecify:1.0.0")
     implementation("de.rototor.snuggletex:snuggletex-core:1.3.0")
 
-    testImplementation(platform("org.junit:junit-bom:6.1.1"))
+    testImplementation(platform("org.junit:junit-bom:6.1.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
