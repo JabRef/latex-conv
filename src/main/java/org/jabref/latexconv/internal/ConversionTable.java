@@ -179,6 +179,27 @@ public final class ConversionTable {
         return Map.copyOf(map);
     }
 
+    private static final Pattern COMMAND_SPELLING = Pattern.compile("\\\\([a-zA-Z]+)(\\{.*})?");
+
+    /// Distinct alphabetic LaTeX command names appearing anywhere in the table, mapped to the
+    /// argument count implied by the row's latex text: bare `\name` implies 0, `\name{...}`
+    /// implies 1. When a name occurs with both arities the higher one wins — an argument-taking
+    /// registration still surfaces bare occurrences (as a recoverable parse error), while a
+    /// zero-argument registration would silently detach the braces from `\name{x}`.
+    ///
+    /// Used to register the table's vocabulary with the parser; single-character command names
+    /// (`\"`, `\$`, ...) are the parser's own business and excluded here.
+    public static Map<String, Integer> commandArities() {
+        Map<String, Integer> arities = new LinkedHashMap<>();
+        for (Row row : instance().rows) {
+            Matcher m = COMMAND_SPELLING.matcher(row.latex());
+            if (m.matches()) {
+                arities.merge(m.group(1), m.group(2) == null ? 0 : 1, Integer::max);
+            }
+        }
+        return Map.copyOf(arities);
+    }
+
     /// Total number of rows loaded from the table, for test sanity checks.
     public static int size() {
         return instance().rows.size();
