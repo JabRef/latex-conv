@@ -7,7 +7,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /// Behavioral contract ported from JabRef's `LatexToUnicodeFormatterTest`, which this library is
-/// meant to replace (see JabRef issues #5547, #3644, #7291, #2500, #2498, #2458).
+/// meant to replace (see JabRef issues
+/// [#5547](https://github.com/JabRef/jabref/issues/5547),
+/// [#3644](https://github.com/JabRef/jabref/issues/3644),
+/// [#7291](https://github.com/JabRef/jabref/issues/7291),
+/// [#2500](https://github.com/JabRef/jabref/issues/2500),
+/// [#2498](https://github.com/JabRef/jabref/issues/2498),
+/// [#2458](https://github.com/JabRef/jabref/issues/2458)).
 class LatexToUnicodeTest {
 
     @Test
@@ -159,7 +165,7 @@ class LatexToUnicodeTest {
         assertEquals("Lorem ipsum_(lorem ipsum)", LatexConv.toUnicode("Lorem ipsum_{lorem ipsum}"));
     }
 
-    /// <a href="https://github.com/JabRef/jabref/issues/5547">JabRef issue 5547</a>
+    /// [JabRef issue 5547](https://github.com/JabRef/jabref/issues/5547)
     @Test
     void twoDifferentMacrons() {
         assertEquals("Puṇya-pattana-vidyā-pı̄ṭhādhi-kṛtaiḥ prā-kaśyaṃ nı̄taḥ",
