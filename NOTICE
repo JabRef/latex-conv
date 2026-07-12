@@ -1,0 +1,18 @@
+latex-conv
+Copyright (c) 2026 Oliver Kopp and contributors
+
+This library depends on and derives data from the following third-party works:
+
+- SnuggleTeX (https://github.com/davemckain/snuggletex), used as the LaTeX parser
+  via the Maven Central fork de.rototor.snuggletex:snuggletex-core.
+  License: BSD-3-Clause, Copyright (c) 2008-2011, The University of Edinburgh.
+
+The bundled conversion table (conversion-table.tsv) will additionally derive from
+(attribution completed when the table is generated):
+
+- Biber (https://github.com/plk/biber), lib/Biber/LaTeX/recode_data.xml.
+  License: Artistic License 2.0.
+- latex2unicode (https://github.com/tomtung/latex2unicode) mapping data.
+  License: Apache License 2.0.
+- JabRef (https://github.com/JabRef/jabref) HTMLUnicodeConversionMaps.
+  License: MIT. Parts of that table derive from ISO 8879 entity definitions.
