@@ -127,7 +127,7 @@ greek	Β	\Beta
 greek	Γ	$\Gamma$	alt
 greek	Γ	\Gamma	
 greek	Δ	$\Delta$	alt
-greek	Δ	\Delta	encode-only
+greek	Δ	\Delta	
 greek	Ε	$\Epsilon$	alt
 greek	Ε	\Epsilon	
 greek	Ζ	$\Zeta$	alt
@@ -1200,6 +1200,7 @@ symbols	<	\textless	decode-only
 symbols	=	\textequals	decode-only
 symbols	>	\textgreater	decode-only
 symbols	[	\lbrack	decode-only
+symbols	\	\backslash	decode-only
 symbols	\	\textbackslash	decode-only
 symbols	]	\rbrack	decode-only
 symbols	^	\textasciicircum	encode-only,decode-only
@@ -1509,7 +1510,7 @@ symbols	∅	\emptyset	alt
 symbols	∅	\set	
 symbols	∅	\varnothing	alt
 symbols	∆	$\triangle$	alt
-symbols	∆	\Delta	
+symbols	∆	\Delta	encode-only
 symbols	∇	$\nabla$	alt
 symbols	∇	\nabla	
 symbols	∈	$\in$	alt

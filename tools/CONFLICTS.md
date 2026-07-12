@@ -84,12 +84,18 @@ exactly and are removed by exact-row dedup; genuine differences (e.g. token `b` 
 JabRef for both U+0331 "macron below" and U+0332 "underline", while Biber's own `\b` is
 U+0331) are resolved by the general cross-latex-spelling conflict pass below.
 
+## Generator supplements
+
+Rows added by the generator itself, absent from all three sources:
+
+- `\backslash` -> `\` (symbols, decode-only).
+
 ## Row counts by source (before merge-time dedup/conflict resolution)
 
 - Biber: 833
 - tomtung (latex2unicode): 967
 - JabRef: 563
-- Total raw rows: 2363
+- Total raw rows: 2364
 
 ## Biber `decode_exclude` applied
 
@@ -97,7 +103,7 @@ Tokens: [-, |, textbraceleft, textbraceright, textunderscore, textasciitilde, te
 
 ## Biber `encode_exclude` applied
 
-Characters: [U+0022 ("), U+0023 (#), U+0024 ($), U+0025 (%), U+0026 (&), U+0027 ('), U+002A (*), U+003C (<), U+003D (=), U+003E (>), U+005B ([), U+005D (]), U+005C (\), U+005E (^), U+005F (_), U+0060 (`), U+0067 (g), U+007B ({), U+007C (|), U+007D (}), U+007E (~), U+00A0 ( ), U+00A3 (£), U+00B1 (±), U+00B6 (¶)]. Marked 36 row(s) (across all sources) `decode-only` so none of them is ever chosen as the
+Characters: [U+0022 ("), U+0023 (#), U+0024 ($), U+0025 (%), U+0026 (&), U+0027 ('), U+002A (*), U+003C (<), U+003D (=), U+003E (>), U+005B ([), U+005D (]), U+005C (\), U+005E (^), U+005F (_), U+0060 (`), U+0067 (g), U+007B ({), U+007C (|), U+007D (}), U+007E (~), U+00A0 ( ), U+00A3 (£), U+00B1 (±), U+00B6 (¶)]. Marked 37 row(s) (across all sources) `decode-only` so none of them is ever chosen as the
 canonical encode target for that character; several excluded characters (e.g. space,
 `[`, `]`, backslash) have no matching row in any source and were no-ops.
 
@@ -126,7 +132,7 @@ earlier row from a different source - not logged individually.
 - `\rangle`: targets {U+27E9 (⟩), U+232A (〉)} - decode winner U+27E9 (⟩), other(s) marked `encode-only`.
 - `\copyright`: targets {U+00A9 (©), U+24D2 (ⓒ)} - decode winner U+00A9 (©), other(s) marked `encode-only`.
 - `\mu`: targets {U+00B5 (µ), U+03BC (μ)} - decode winner U+00B5 (µ), other(s) marked `encode-only`.
-- `\Delta`: targets {U+2206 (∆), U+0394 (Δ)} - decode winner U+2206 (∆), other(s) marked `encode-only`.
+- `\Delta`: targets {U+2206 (∆), U+0394 (Δ)} - decode winner U+0394 (Δ), other(s) marked `encode-only`.
 - `\rtimes`: targets {U+22CA (⋊), U+22C8 (⋈)} - decode winner U+22CA (⋊), other(s) marked `encode-only`.
 - `\vartheta`: targets {U+03B8 (θ), U+03D1 (ϑ)} - decode winner U+03D1 (ϑ), other(s) marked `encode-only`.
 - `\varrho`: targets {U+03C1 (ρ), U+03F1 (ϱ)} - decode winner U+03F1 (ϱ), other(s) marked `encode-only`.

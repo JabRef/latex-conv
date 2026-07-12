@@ -35,6 +35,7 @@ public class GenerateTable {
     private static final int SRC_BIBER = 0;
     private static final int SRC_TOMTUNG = 1;
     private static final int SRC_JABREF = 2;
+    private static final int SRC_SUPPLEMENT = 3;
 
     // See resolveCrossLatexConflicts(): Biber's greek group conflates these "var" commands with
     // their base letter's codepoint; tomtung has the real distinct Unicode script-variant glyph.
@@ -51,6 +52,9 @@ public class GenerateTable {
         final String latex;
         final Set<String> flags = new LinkedHashSet<>();
         final int source;
+        // All sources that contributed this exact triple; exact-duplicate collapsing merges the
+        // duplicate's sources in here, so cross-source agreement stays visible afterwards
+        final Set<Integer> sources = new LinkedHashSet<>();
         final boolean sourcePreferred; // Biber preferred="1" hint, used only for canonical pick
 
         Row(String category, String unicode, String latex, int source, boolean sourcePreferred) {
@@ -61,6 +65,7 @@ public class GenerateTable {
             this.unicode = unicode;
             this.latex = latex;
             this.source = source;
+            this.sources.add(source);
             this.sourcePreferred = sourcePreferred;
         }
 
@@ -114,6 +119,8 @@ public class GenerateTable {
 
         parseJabRef(jabrefJava);
         int afterJabRef = rows.size();
+
+        addSupplements();
 
         conflicts.append("## Row counts by source (before merge-time dedup/conflict resolution)\n\n");
         conflicts.append("- Biber: ").append(afterBiber).append('\n');
@@ -639,10 +646,13 @@ public class GenerateTable {
         Set<String> seen = new LinkedHashSet<>();
         List<Row> unique = new ArrayList<>();
         int dropped = 0;
+        Map<String, Row> survivors = new LinkedHashMap<>();
         for (Row r : rows) {
             if (seen.add(r.key())) {
                 unique.add(r);
+                survivors.put(r.key(), r);
             } else {
+                survivors.get(r.key()).sources.addAll(r.sources);
                 dropped++;
             }
         }
@@ -663,6 +673,19 @@ public class GenerateTable {
         Map<String, List<Row>> byLatex = new LinkedHashMap<>();
         for (Row r : rows) {
             byLatex.computeIfAbsent(r.latex, k -> new ArrayList<>()).add(r);
+        }
+
+        // tomtung's decode opinion per bare spelling. Its math commands are stored $-wrapped
+        // (e.g. `$\Delta$`), which lands them in a different spelling group than Biber's bare
+        // `\Delta` - strip the wrapping so agreement is still visible.
+        Map<String, String> tomtungOpinion = new LinkedHashMap<>();
+        for (Row r : rows) {
+            if (r.sources.contains(SRC_TOMTUNG)) {
+                String bare = r.latex.length() > 2 && r.latex.startsWith("$") && r.latex.endsWith("$")
+                        ? r.latex.substring(1, r.latex.length() - 1)
+                        : r.latex;
+                tomtungOpinion.putIfAbsent(bare, r.unicode);
+            }
         }
 
         conflicts.append("## Cross-latex-spelling conflicts (same LaTeX text, different codepoints)\n\n");
@@ -698,7 +721,10 @@ public class GenerateTable {
                 winner = group.stream().filter(r -> r.source == SRC_TOMTUNG).findFirst()
                         .orElse(pickFirstBySourcePriority(group, latex));
             } else {
-                winner = pickFirstBySourcePriority(group, latex);
+                winner = pickTomtungAgreement(group, tomtungOpinion.get(latex));
+                if (winner == null) {
+                    winner = pickFirstBySourcePriority(group, latex);
+                }
             }
 
             for (Row r : group) {
@@ -716,6 +742,49 @@ public class GenerateTable {
             conflicts.append("(none)\n");
         }
         conflicts.append("\nTotal conflict groups: ").append(conflictGroups).append(".\n\n");
+    }
+
+    /** Spellings none of the three sources carries but real-world bib fields use. */
+    private static void addSupplements() {
+        // \backslash is the standard math-mode spelling of "\"; the sources only know
+        // \textbackslash. decode-only: encoding "\" stays excluded, like Biber does.
+        Row backslash = new Row("symbols", "\\", "\\backslash", SRC_SUPPLEMENT, false);
+        backslash.flags.add("decode-only");
+        rows.add(backslash);
+        conflicts.append("## Generator supplements\n\n");
+        conflicts.append("Rows added by the generator itself, absent from all three sources:\n\n");
+        conflicts.append("- `\\backslash` -> `\\` (symbols, decode-only).\n\n");
+    }
+
+    /**
+     * When Biber itself offers two codepoints for one spelling with no preferred hint (e.g.
+     * \Delta appears in its symbols group as U+2206 and its greek group as U+0394), file order is
+     * a meaningless tie-breaker. If tomtung maps the same (unwrapped) spelling to one of the
+     * contested codepoints, that two-source agreement decides (\Delta -> U+0394 Δ, matching
+     * standard LaTeX). Returns null when the rule does not apply.
+     */
+    private static Row pickTomtungAgreement(List<Row> group, String tomtungUnicode) {
+        if (tomtungUnicode == null) {
+            return null;
+        }
+        Set<String> biberTargets = new LinkedHashSet<>();
+        for (Row r : group) {
+            if (r.sources.contains(SRC_BIBER)) {
+                if (r.sourcePreferred) {
+                    return null;
+                }
+                biberTargets.add(r.unicode);
+            }
+        }
+        if (biberTargets.size() < 2 || !biberTargets.contains(tomtungUnicode)) {
+            return null;
+        }
+        for (Row r : group) {
+            if (r.unicode.equals(tomtungUnicode)) {
+                return r;
+            }
+        }
+        return null;
     }
 
     private static Row pickFirstBySourcePriority(List<Row> group, String latex) {
@@ -1067,6 +1136,7 @@ public class GenerateTable {
                 byTriple.put(triple, r);
             } else {
                 existing.flags.addAll(r.flags);
+                existing.sources.addAll(r.sources);
                 // Keep the higher-priority (lower rank) source and its preferred hint.
             }
         }
