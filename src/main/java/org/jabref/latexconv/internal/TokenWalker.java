@@ -79,7 +79,9 @@ public abstract class TokenWalker {
 
     public String emit(SnuggleSession session) {
         for (InputError error : session.getErrors()) {
-            if (error.getErrorCode() != CoreErrorCode.TTEC00 && error.getErrorCode() != CoreErrorCode.TTEM03) {
+            if (error.getErrorCode() != CoreErrorCode.TTEC00
+                    && error.getErrorCode() != CoreErrorCode.TTEC01
+                    && error.getErrorCode() != CoreErrorCode.TTEM03) {
                 throw new UnsupportedLatexException("Unrecoverable parse error " + error.getErrorCode());
             }
         }
@@ -131,7 +133,16 @@ public abstract class TokenWalker {
         CommandToken command = (CommandToken) tokens.get(index);
         String name = command.getCommand().getTeXName();
         switch (name) {
-            case "<paragraph>" -> out.append(walkArgument(command, 0));
+            case "<paragraph>" -> {
+                out.append(walkArgument(command, 0));
+                // TokenFixer trims trailing whitespace out of paragraph blocks (visible when an
+                // error token splits the input into several paragraphs); restore it from the
+                // source slice so words don't fuse across the split
+                CharSequence source = command.getSlice().extract();
+                if (!source.isEmpty() && Character.isWhitespace(source.charAt(source.length() - 1))) {
+                    appendPlain(out, " ");
+                }
+            }
             case "<msupormover>", "<msubormunder>" -> {
                 boolean superscript = "<msupormover>".equals(name);
                 if (scriptsAsSource()) {
@@ -248,7 +259,8 @@ public abstract class TokenWalker {
         // Accent commands the tokenizer doesn't know (\= \. - single-char control sequences
         // cannot be registered by name). The operand's braces are stripped and its text may even
         // be merged with what follows, so emit the next sibling whole and attach the combining
-        // mark to its first codepoint
+        // mark to its first codepoint. Must run before the plain table lookup: \= also has a
+        // decodable table row (the bare combining mark), which alone would land before its base
         Optional<String> combining = ConversionTable.combiningForAccent(slice.extract().toString());
         if (combining.isPresent()) {
             int next = index + 1;
@@ -258,6 +270,15 @@ public abstract class TokenWalker {
             }
             out.append(applyCombining(base.toString(), combining.get()));
             return next;
+        }
+
+        // Commands the parser rejected but the table knows: mode-restricted built-ins like \AA
+        // (TTEC01: builtin, but math-only in SnuggleTeX, so registration is impossible) decode
+        // straight from the table
+        Optional<String> tabled = ConversionTable.commandToUnicode(slice.extract().toString());
+        if (tabled.isPresent()) {
+            appendPlain(out, tabled.get());
+            return index + 1;
         }
 
         // TTEC00, unknown command: its brace groups are detached in the token stream (content

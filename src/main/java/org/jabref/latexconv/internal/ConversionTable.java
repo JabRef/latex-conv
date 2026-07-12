@@ -41,6 +41,7 @@ public final class ConversionTable {
     private final Map<Integer, Integer> superscriptStyledToBase;
     private final Map<Integer, Integer> subscriptBaseToStyled;
     private final Map<Integer, Integer> subscriptStyledToBase;
+    private final Map<Integer, String> accentByCombining; // combining codepoint -> bare accent command
 
     private ConversionTable() {
         this.rows = load();
@@ -48,6 +49,7 @@ public final class ConversionTable {
         Map<String, Row> decodableMap = new LinkedHashMap<>();
         Map<Integer, Row> encodePreferredMap = new LinkedHashMap<>();
         Map<String, Row> combiningMap = new LinkedHashMap<>();
+        Map<Integer, String> accentMap = new LinkedHashMap<>();
         Map<Integer, Integer> supBaseToStyled = new LinkedHashMap<>();
         Map<Integer, Integer> supStyledToBase = new LinkedHashMap<>();
         Map<Integer, Integer> subBaseToStyled = new LinkedHashMap<>();
@@ -63,8 +65,13 @@ public final class ConversionTable {
                 // per codepoint. putIfAbsent here is defensive, not a silent-override fallback.
                 encodePreferredMap.putIfAbsent(cp, row);
             }
-            if ("diacritics".equals(row.category()) && row.hasFlag("combining") && !row.hasFlag("encode-only")) {
-                combiningMap.putIfAbsent(row.latex(), row);
+            if ("diacritics".equals(row.category()) && row.hasFlag("combining")) {
+                if (!row.hasFlag("encode-only")) {
+                    combiningMap.putIfAbsent(row.latex(), row);
+                }
+                if (!row.hasFlag("alt")) {
+                    accentMap.putIfAbsent(row.unicode().codePointAt(0), row.latex());
+                }
             }
             if (row.hasFlag("script")) {
                 Matcher m = SCRIPT_LATEX.matcher(row.latex());
@@ -89,6 +96,7 @@ public final class ConversionTable {
         this.superscriptStyledToBase = Map.copyOf(supStyledToBase);
         this.subscriptBaseToStyled = Map.copyOf(subBaseToStyled);
         this.subscriptStyledToBase = Map.copyOf(subStyledToBase);
+        this.accentByCombining = Map.copyOf(accentMap);
     }
 
     private static final class Holder {
@@ -177,6 +185,19 @@ public final class ConversionTable {
             }
         }
         return Map.copyOf(map);
+    }
+
+    /// Reverse of [#combiningForAccent(String)]: the bare accent command producing a combining
+    /// mark, for the encode direction.
+    public static Optional<String> accentForCombining(int codePoint) {
+        return Optional.ofNullable(instance().accentByCombining.get(codePoint));
+    }
+
+    /// Whether the encode-preferred spelling for `codePoint` is only valid in math mode (`\pi`
+    /// and friends), so encoders must wrap it in `$...$`.
+    public static boolean encodeNeedsMathMode(int codePoint) {
+        Row row = instance().encodePreferred.get(codePoint);
+        return row != null && (row.hasFlag("math") || "greek".equals(row.category()));
     }
 
     private static final Pattern COMMAND_SPELLING = Pattern.compile("\\\\([a-zA-Z]+)(\\{.*})?");

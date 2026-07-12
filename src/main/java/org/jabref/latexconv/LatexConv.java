@@ -7,6 +7,7 @@ import org.jabref.latexconv.internal.HtmlEmitter;
 import org.jabref.latexconv.internal.SnuggleSupport;
 import org.jabref.latexconv.internal.TokenWalker;
 import org.jabref.latexconv.internal.UnicodeEmitter;
+import org.jabref.latexconv.internal.UnicodeToLatexConverter;
 
 import uk.ac.ed.ph.snuggletex.SnuggleInput;
 import uk.ac.ed.ph.snuggletex.SnuggleSession;
@@ -43,6 +44,13 @@ public final class LatexConv {
     /// downstream math renderer.
     public static String toHtml(String latex, ConversionOptions options) {
         return convert(latex, new HtmlEmitter(options));
+    }
+
+    /// Encodes Unicode plain text as LaTeX: `Montaña` → accent-command form, `π` → `$\pi$`, runs
+    /// of Unicode super-/subscript characters → one merged
+    /// `\textsuperscript{...}`/`\textsubscript{...}`. Characters without a mapping stay as-is.
+    public static String toLatex(String unicodeText) {
+        return UnicodeToLatexConverter.convert(unicodeText);
     }
 
     private static String convert(String latex, TokenWalker walker) {
