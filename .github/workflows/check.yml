@@ -41,3 +41,24 @@ jobs:
           path: |
             build/reports/tests/test/
             build/test-results/test/
+
+  # The committed conversion-table.tsv must match what the generator produces from the pinned
+  # submodules — the same "regenerate and fail on diff" gate JabRef's CI uses for formatting.
+  # This is the only job that needs the tools/upstream/ submodules.
+  table-up-to-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          show-progress: 'false'
+          submodules: true
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: corretto
+          check-latest: true
+      - name: Regenerate conversion table
+        run: java tools/GenerateTable.java
+      - name: Fail on drift
+        run: git diff --exit-code src/main/resources/org/jabref/latexconv/conversion-table.tsv tools/CONFLICTS.md
