@@ -51,7 +51,7 @@ git submodule update --init          # tools/upstream/ — only needed for regen
 java tools/GenerateTable.java        # rewrites the TSV + tools/CONFLICTS.md
 ```
 
-Normal builds and CI never need the submodules.
+Normal builds never need the submodules; CI's `table-up-to-date` job initializes them to verify the committed table matches the generator output.
 
 ## Requirements
 
