@@ -1,0 +1,7 @@
+[submodule "tools/upstream/biber"]
+	path = tools/upstream/biber
+	url = https://github.com/plk/biber
+	branch = dev
+[submodule "tools/upstream/latex2unicode"]
+	path = tools/upstream/latex2unicode
+	url = https://github.com/tomtung/latex2unicode

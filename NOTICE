@@ -7,12 +7,21 @@ This library depends on and derives data from the following third-party works:
   via the Maven Central fork de.rototor.snuggletex:snuggletex-core.
   License: BSD-3-Clause, Copyright (c) 2008-2011, The University of Edinburgh.
 
-The bundled conversion table (conversion-table.tsv) will additionally derive from
-(attribution completed when the table is generated):
+The bundled conversion table (conversion-table.tsv) derives from:
 
-- Biber (https://github.com/plk/biber), lib/Biber/LaTeX/recode_data.xml.
+- Biber (https://github.com/plk/biber), lib/Biber/LaTeX/recode_data.xml, via the git submodule
+  tools/upstream/biber pinned at commit 74252e608e5f8115375c532eb25416430a9f52eb
+  (tag area v0.4-4166-g74252e60).
   License: Artistic License 2.0.
-- latex2unicode (https://github.com/tomtung/latex2unicode) mapping data.
+- latex2unicode (https://github.com/tomtung/latex2unicode) mapping data
+  (src/main/scala/com/github/tomtung/latex2unicode/helper/*.scala), via the git submodule
+  tools/upstream/latex2unicode pinned at commit 1c8b7c4af7c0f2aee3937c5c24305fd01063bc1b
+  (tag v0.3.2).
   License: Apache License 2.0.
-- JabRef (https://github.com/JabRef/jabref) HTMLUnicodeConversionMaps.
+- JabRef (https://github.com/JabRef/jabref) HTMLUnicodeConversionMaps, via the source snapshot
+  tools/source-data/HTMLUnicodeConversionMaps.java taken at commit
+  b0d3eb4f8e248750ac35fb369666d329dfc1d9d2.
   License: MIT. Parts of that table derive from ISO 8879 entity definitions.
+
+See tools/CONFLICTS.md for how these three sources were merged, including every conflict
+encountered and every entry that could not be represented in the table.
