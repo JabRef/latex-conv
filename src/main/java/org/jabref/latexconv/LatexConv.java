@@ -56,12 +56,30 @@ public final class LatexConv {
     private static String convert(String latex, TokenWalker walker) {
         try {
             SnuggleSession session = SnuggleSupport.createSession();
-            session.parseInput(new SnuggleInput(latex));
+            session.parseInput(new SnuggleInput(escapeBareComments(latex)));
             return Normalizer.normalize(walker.emit(session), Normalizer.Form.NFC);
         } catch (IOException | RuntimeException e) {
             // Total-function contract: inputs we cannot convert come back normalized, not as an
             // exception (parse failures surface as UnsupportedLatexException, a RuntimeException)
             return Normalizer.normalize(latex, Normalizer.Form.NFC);
         }
+    }
+
+    /// Bibliography fields never carry intentional LaTeX comments, but real-world titles do
+    /// contain bare `%` ("History%20Textbook"), which would swallow the rest of the line as a
+    /// comment. Escape it so it reads as a literal percent sign; `\%` stays untouched.
+    private static String escapeBareComments(String latex) {
+        StringBuilder result = new StringBuilder(latex.length());
+        boolean escaped = false;
+        for (int i = 0; i < latex.length(); i++) {
+            char c = latex.charAt(i);
+            if (c == '%' && !escaped) {
+                result.append("\\%");
+            } else {
+                result.append(c);
+            }
+            escaped = c == '\\' && !escaped;
+        }
+        return result.toString();
     }
 }

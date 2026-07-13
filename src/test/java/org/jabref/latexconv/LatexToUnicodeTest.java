@@ -226,4 +226,14 @@ class LatexToUnicodeTest {
     void dashLigatures(String expected, String input) {
         assertEquals(expected, LatexConv.toUnicode(input));
     }
+
+    /// Bibliography fields carry bare `%` as a literal character, never as a comment starter.
+    @ParameterizedTest
+    @CsvSource({
+            "'History%20Textbook', 'History%20Textbook'",
+            "'50% off', '50\\% off'"
+    })
+    void percentIsLiteral(String expected, String input) {
+        assertEquals(expected, LatexConv.toUnicode(input));
+    }
 }
