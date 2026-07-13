@@ -62,3 +62,21 @@ jobs:
         run: java tools/GenerateTable.java
       - name: Fail on drift
         run: git diff --exit-code src/main/resources/org/jabref/latexconv/conversion-table.tsv tools/CONFLICTS.md
+
+  # Lints CHANGELOG.md against the Keep a Changelog format — same heylogs setup as JabRef's CI
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          show-progress: 'false'
+      - name: Setup JBang
+        uses: jbangdev/setup-jbang@main
+      - name: Lint CHANGELOG.md
+        run: |
+          # all-h2-contain-a-version is filtered out: the "Unreleased" section is intentional
+          jbang com.github.nbbrd.heylogs:heylogs-cli:0.19.1:bin check --rule dot-space-link-style:ERROR --format github-actions CHANGELOG.md | grep -v all-h2-contain-a-version | tee heylogs.txt || true
+          error_count=$(grep -c '^::error' heylogs.txt || true)
+          if [ "$error_count" -ne 0 ]; then
+            exit 1
+          fi
