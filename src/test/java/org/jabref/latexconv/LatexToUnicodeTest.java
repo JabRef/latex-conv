@@ -198,4 +198,32 @@ class LatexToUnicodeTest {
     void backslashInMath() {
         assertEquals("\\", LatexConv.toUnicode("$\\backslash$"));
     }
+
+    /// Math-mode readability, matching JabRef PR
+    /// [#16203](https://github.com/JabRef/jabref/pull/16203): brackets survive, `\text`/
+    /// `\operatorname` unwrap, combined `_{}^{}` scripts convert (single characters without a
+    /// script form fall back without grouping parentheses), and source spacing survives.
+    @ParameterizedTest
+    @CsvSource({
+            "'A=𝔽[x,y,z]/I', '$A=\\mathbb{F}[x,y,z]/I$'",
+            "'(R)', '$(R)$'",
+            "'char(𝔽)=0', '$\\text{char}(\\mathbb{F})=0$'",
+            "'two words', '$\\text{two words}$'",
+            "'edim(R)≥ 2', '$\\operatorname{edim}(R)\\ge 2$'",
+            "'xₐᵇ', '$x_{a}^{b}$'",
+            "'𝔹_ℚᵖᵘʳᵉ(R)', '$\\mathbb{B}_{\\mathbb{Q}}^{\\mathrm{pure}}(R)$'",
+            "'𝔹_ℚ(R) = 𝔹(R)', '$\\mathbb{B}_{\\mathbb{Q}}(R) = \\mathbb{B}(R)$'"
+    })
+    void mathRemainsReadable(String expected, String input) {
+        assertEquals(expected, LatexConv.toUnicode(input));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "'Cohen–Macaulay', 'Cohen--Macaulay'",
+            "'pp. 1—2', 'pp. 1---2'"
+    })
+    void dashLigatures(String expected, String input) {
+        assertEquals(expected, LatexConv.toUnicode(input));
+    }
 }

@@ -6,8 +6,10 @@ import java.util.TreeMap;
 import uk.ac.ed.ph.snuggletex.SnuggleEngine;
 import uk.ac.ed.ph.snuggletex.SnugglePackage;
 import uk.ac.ed.ph.snuggletex.SnuggleSession;
+import uk.ac.ed.ph.snuggletex.definitions.LaTeXMode;
 
 import static uk.ac.ed.ph.snuggletex.definitions.Globals.ALL_MODES;
+import static uk.ac.ed.ph.snuggletex.definitions.Globals.MATH_MODE_ONLY;
 
 /// Owns the shared [SnuggleEngine], with the conversion table's command vocabulary registered on
 /// top of SnuggleTeX's built-ins so the tokenizer accepts commands like `\textsuperscript` or
@@ -43,6 +45,10 @@ public final class SnuggleSupport {
         // TreeMap for deterministic registration order
         Map<String, Integer> arities = new TreeMap<>(ConversionTable.commandArities());
         EXTRA_COMMANDS.forEach(arities::putIfAbsent);
+        // amsmath's text-in-math commands: the argument is regular text (LR mode), so spaces
+        // survive tokenization instead of being swallowed by math mode
+        snugglePackage.addComplexCommandOneArg("text", false, MATH_MODE_ONLY, LaTeXMode.LR, null, null);
+        snugglePackage.addComplexCommandOneArg("operatorname", false, MATH_MODE_ONLY, LaTeXMode.LR, null, null);
         for (Map.Entry<String, Integer> entry : arities.entrySet()) {
             if (engine.getBuiltinCommandByTeXName(entry.getKey()) != null) {
                 continue;
