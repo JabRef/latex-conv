@@ -12,6 +12,7 @@ import uk.ac.ed.ph.snuggletex.InputError;
 import uk.ac.ed.ph.snuggletex.SnuggleSession;
 import uk.ac.ed.ph.snuggletex.definitions.ComputedStyle;
 import uk.ac.ed.ph.snuggletex.definitions.CoreErrorCode;
+import uk.ac.ed.ph.snuggletex.definitions.LaTeXMode;
 import uk.ac.ed.ph.snuggletex.internal.FrozenSlice;
 import uk.ac.ed.ph.snuggletex.internal.WorkingDocument;
 import uk.ac.ed.ph.snuggletex.tokens.BraceContainerToken;
@@ -20,6 +21,7 @@ import uk.ac.ed.ph.snuggletex.tokens.EnvironmentToken;
 import uk.ac.ed.ph.snuggletex.tokens.ErrorToken;
 import uk.ac.ed.ph.snuggletex.tokens.FlowToken;
 import uk.ac.ed.ph.snuggletex.tokens.MathCharacterToken;
+import uk.ac.ed.ph.snuggletex.tokens.TokenType;
 
 /// Walks a parsed SnuggleTeX token tree and renders it through the output hooks implemented by
 /// [UnicodeEmitter] and [HtmlEmitter], driven by [ConversionTable].
@@ -91,10 +93,37 @@ public abstract class TokenWalker {
     protected String walk(List<FlowToken> tokens) {
         StringBuilder out = new StringBuilder();
         int i = 0;
+        FlowToken previous = null;
         while (i < tokens.size()) {
+            FlowToken current = tokens.get(i);
+            // Math mode has no whitespace tokens, so source spacing (`(R) = 2`, `\ge 2`) would
+            // silently vanish; restore a single space wherever the source had one
+            if (previous != null
+                    && previous.getLatexMode() == LaTeXMode.MATH
+                    && current.getLatexMode() == LaTeXMode.MATH
+                    && hasWhitespaceGap(previous, current)) {
+                appendPlain(out, " ");
+            }
             i = emitToken(tokens, i, out);
+            previous = tokens.get(i - 1);
         }
         return out.toString();
+    }
+
+    private static boolean hasWhitespaceGap(FlowToken previous, FlowToken current) {
+        FrozenSlice previousSlice = previous.getSlice();
+        int gapStart = previousSlice.getEndIndex();
+        int gapEnd = current.getSlice().getStartIndex();
+        if (previous.getType() == TokenType.COMMAND) {
+            // An argumentless command's terminating whitespace is consumed into its own slice
+            // (`\ge 2` tokenizes as `\ge ` + `2`), so the slice's last character counts as gap
+            gapStart = Math.max(previousSlice.getStartIndex(), gapStart - 1);
+        }
+        if (gapStart >= gapEnd) {
+            return false;
+        }
+        CharSequence gap = previousSlice.getDocument().extract(gapStart, gapEnd);
+        return gap.chars().anyMatch(Character::isWhitespace);
     }
 
     /// Emits the token at `index` (possibly consuming look-ahead siblings, e.g. an accent's
@@ -112,10 +141,18 @@ public abstract class TokenWalker {
                 out.append(walk(((BraceContainerToken) token).getContents()));
                 yield index + 1;
             }
-            case TEXT_MODE_TEXT, VERBATIM_MODE_TEXT -> {
-                // Plain ~ is LaTeX's non-breaking space; the tokenizer leaves it inside text runs
-                String text = token.getSlice().extract().toString().replace('~', '\u00A0');
+            case TEXT_MODE_TEXT -> {
+                // Plain ~ is LaTeX's non-breaking space; the tokenizer leaves it inside text
+                // runs, as it does the -- and --- dash ligatures
+                String text = token.getSlice().extract().toString()
+                                   .replace('~', '\u00A0')
+                                   .replace("---", "\u2014")
+                                   .replace("--", "\u2013");
                 appendText(out, text, token.getComputedStyle());
+                yield index + 1;
+            }
+            case VERBATIM_MODE_TEXT -> {
+                appendText(out, token.getSlice().extract().toString(), token.getComputedStyle());
                 yield index + 1;
             }
             case MATH_CHARACTER -> {
@@ -152,6 +189,17 @@ public abstract class TokenWalker {
                 out.append(walkArgument(command, 0));
                 appendScript(out, walkArgument(command, 1), superscript);
             }
+            case "<msubsupormunderover>" -> {
+                // A base carrying both scripts (x_{a}^{b}): arguments are base, sub, sup
+                if (scriptsAsSource()) {
+                    appendPlain(out, command.getSlice().extract().toString());
+                    return index + 1;
+                }
+                out.append(walkArgument(command, 0));
+                appendScript(out, walkArgument(command, 1), false);
+                appendScript(out, walkArgument(command, 2), true);
+            }
+            case "text", "operatorname" -> out.append(walkArgument(command, 0));
             case "textsuperscript", "textsubscript" -> {
                 if (scriptsAsSource()) {
                     appendPlain(out, command.getSlice().extract().toString());
@@ -226,7 +274,31 @@ public abstract class TokenWalker {
             appendMathPassthrough(out, environment.getSlice().extract().toString());
             return;
         }
+        if ("<mfenced>".equals(name)) {
+            // TokenFixer wraps matched math brackets into this synthetic environment; the fence
+            // characters live only in the source outside the content slice
+            FrozenSlice whole = environment.getSlice();
+            FrozenSlice content = environment.getContent().getSlice();
+            WorkingDocument document = whole.getDocument();
+            appendPlain(out, fenceText(document.extract(whole.getStartIndex(), content.getStartIndex())));
+            out.append(walk(environment.getContent().getContents()));
+            appendPlain(out, fenceText(document.extract(content.getEndIndex(), whole.getEndIndex())));
+            return;
+        }
         out.append(walk(environment.getContent().getContents()));
+    }
+
+    /// Normalizes a fence's source text (`(`, `[`, but also `\left(` or `\{`) to the bare
+    /// bracket character.
+    private static String fenceText(CharSequence source) {
+        String fence = source.toString().strip();
+        if (fence.startsWith("\\left") || fence.startsWith("\\right")) {
+            fence = fence.substring(fence.charAt(1) == 'l' ? 5 : 6).strip();
+        }
+        if (fence.length() == 2 && fence.charAt(0) == '\\') {
+            return fence.substring(1);
+        }
+        return fence;
     }
 
     private int emitError(List<FlowToken> tokens, int index, StringBuilder out) {

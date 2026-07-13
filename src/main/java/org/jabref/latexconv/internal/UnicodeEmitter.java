@@ -49,8 +49,14 @@ public final class UnicodeEmitter extends TokenWalker {
                 // Already a script character from a nested conversion (x^{d_1} -> xᵈ₁)
                 mapped.appendCodePoint(cp);
             } else {
-                // No script form for some character: fall back to readable ^(...)/_(...)
-                out.append(superscript ? "^(" : "_(").append(renderedContent).append(')');
+                // No script form for some character: fall back to readable ^(...)/_(...);
+                // a single character needs no grouping parentheses (x_ℚ, not x_(ℚ))
+                out.append(superscript ? '^' : '_');
+                if (renderedContent.codePointCount(0, renderedContent.length()) > 1) {
+                    out.append('(').append(renderedContent).append(')');
+                } else {
+                    out.append(renderedContent);
+                }
                 return;
             }
         }
