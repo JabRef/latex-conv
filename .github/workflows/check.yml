@@ -62,3 +62,16 @@ jobs:
         run: java tools/GenerateTable.java
       - name: Fail on drift
         run: git diff --exit-code src/main/resources/org/jabref/latexconv/conversion-table.tsv tools/CONFLICTS.md
+
+  # Lints CHANGELOG.md against the Keep a Changelog format
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          show-progress: 'false'
+      - name: Lint CHANGELOG.md
+        uses: jbangdev/jbang-action@v0.140.1
+        with:
+          script: com.github.nbbrd.heylogs:heylogs-cli:0.19.1:bin
+          scriptargs: "check --rule dot-space-link-style:ERROR --format github-actions CHANGELOG.md"
