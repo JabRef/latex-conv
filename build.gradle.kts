@@ -29,7 +29,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
-    api("org.jspecify:jspecify:1.0.0")
+    api("org.jspecify:jspecify:1.0.1")
     implementation("de.rototor.snuggletex:snuggletex-core:1.3.0")
 
     testImplementation(platform("org.junit:junit-bom:6.1.2"))
