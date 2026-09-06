@@ -1,4 +1,5 @@
 # latex-conv
+[![APIdia](https://apidia.net/mvn/org.jabref/latex-conv/badge.svg)](https://apidia.net/mvn/org.jabref/latex-conv)
 
 Converts LaTeX to Unicode/HTML and back — [JabRef](https://github.com/JabRef/jabref)'s bibliography-field text conversion library.
 
